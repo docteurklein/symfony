@@ -72,6 +72,7 @@ class PhpDumper extends Dumper
     private $targetDirMaxMatches;
     private $docStar;
     private $serviceIdToMethodNameMap;
+    private $methodNameToServiceIdMap;
     private $usedMethodNames;
     private $namespace;
     private $asFiles;
@@ -1140,7 +1141,13 @@ EOF;
 
     protected function load(\$file, \$lazyLoad = true)
     {
-        return require \$this->containerDir.\\DIRECTORY_SEPARATOR.\$file;
+        \$service = require_once \$this->containerDir.\\DIRECTORY_SEPARATOR.\$file;
+
+        if (\$service === true) {
+            return \$this->services[\$this->methodNameToServiceIdMap[substr(\$file, 0, -4)]];
+        }
+
+        return \$service;
     }
 
 EOF;
@@ -1843,6 +1850,7 @@ EOF;
     private function initializeMethodNamesMap(string $class)
     {
         $this->serviceIdToMethodNameMap = [];
+        $this->methodNameToServiceIdMap = [];
         $this->usedMethodNames = [];
 
         if ($reflectionClass = $this->container->getReflectionClass($class)) {
@@ -1873,6 +1881,7 @@ EOF;
         }
 
         $this->serviceIdToMethodNameMap[$id] = $methodName;
+        $this->methodNameToServiceIdMap[$methodName] = $id;
         $this->usedMethodNames[strtolower($methodName)] = true;
 
         return $methodName;
